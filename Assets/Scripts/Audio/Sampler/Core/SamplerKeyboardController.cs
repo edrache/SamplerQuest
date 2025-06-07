@@ -12,6 +12,9 @@ namespace SamplerQuest.Audio.Sampler
         [SerializeField] private string startNote = "C4";
         [SerializeField] private int octaveRange = 2;
         
+        [Header("Scale Settings")]
+        [SerializeField] private NoteManager noteManager;
+        
         private SamplerController samplerController;
         private Dictionary<KeyCode, string> keyToNoteMap = new Dictionary<KeyCode, string>();
         private HashSet<KeyCode> pressedKeys = new HashSet<KeyCode>();
@@ -24,8 +27,21 @@ namespace SamplerQuest.Audio.Sampler
                 Debug.LogError("SamplerController not found in scene!");
                 return;
             }
+
+            if (noteManager != null)
+            {
+                noteManager.RegisterSampler(samplerController);
+            }
             
             InitializeKeyboard();
+        }
+
+        private void OnDestroy()
+        {
+            if (noteManager != null)
+            {
+                noteManager.UnregisterSampler(samplerController);
+            }
         }
         
         private void Start()
@@ -86,12 +102,28 @@ namespace SamplerQuest.Audio.Sampler
                 if (Input.GetKeyDown(kvp.Key) && !pressedKeys.Contains(kvp.Key))
                 {
                     pressedKeys.Add(kvp.Key);
-                    samplerController.PlayNote(sampleData.sampleName, kvp.Value);
+                    string note = kvp.Value;
+                    
+                    // Map note to scale if NoteManager is available
+                    if (noteManager != null)
+                    {
+                        note = noteManager.MapNoteToScale(note);
+                    }
+                    
+                    samplerController.PlayNote(sampleData.sampleName, note);
                 }
                 else if (Input.GetKeyUp(kvp.Key) && pressedKeys.Contains(kvp.Key))
                 {
                     pressedKeys.Remove(kvp.Key);
-                    samplerController.StopNote(kvp.Value);
+                    string note = kvp.Value;
+                    
+                    // Map note to scale if NoteManager is available
+                    if (noteManager != null)
+                    {
+                        note = noteManager.MapNoteToScale(note);
+                    }
+                    
+                    samplerController.StopNote(note);
                 }
             }
         }

@@ -28,6 +28,10 @@ namespace SamplerQuest.Audio.Sampler
         [SerializeField] private Scale currentScale;
         [SerializeField] private List<Scale> availableScales = new List<Scale>();
         [SerializeField] private ScaleType scaleType = ScaleType.Major;
+        [SerializeField] private bool mapToHigherNote = true; // If true, map to higher note, if false, map to lower note
+
+        [Header("Sampler Settings")]
+        [SerializeField] private List<SamplerController> connectedSamplers = new List<SamplerController>();
 
         private Dictionary<string, float> noteFrequencies = new Dictionary<string, float>();
         private List<Note> currentScaleNotes = new List<Note>();
@@ -94,25 +98,107 @@ namespace SamplerQuest.Audio.Sampler
             UpdateCurrentScale();
         }
 
-        public void SetScale(string scaleName)
+        public void SetScale(ScaleType type)
         {
-            currentScale = availableScales.Find(s => s.name == scaleName);
-            if (currentScale != null)
+            Debug.Log($"Setting scale to: {type}");
+            scaleType = type;
+            currentScale = availableScales.Find(s => s.name == type.ToString());
+            if (currentScale == null)
             {
-                UpdateCurrentScale();
+                Debug.LogWarning($"Scale {type} not found, defaulting to Major");
+                currentScale = availableScales[0]; // Default to Major if not found
+            }
+            UpdateCurrentScale();
+        }
+
+        public void SetMapDirection(bool mapToHigher)
+        {
+            mapToHigherNote = mapToHigher;
+        }
+
+        public string MapNoteToScale(string inputNote)
+        {
+            if (string.IsNullOrEmpty(inputNote)) return inputNote;
+
+            // Extract note name and octave
+            string noteName = inputNote.Substring(0, inputNote.Length - 1);
+            int octave = int.Parse(inputNote.Substring(inputNote.Length - 1));
+
+            // Find the note in the current scale
+            string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            int inputNoteIndex = System.Array.IndexOf(noteNames, noteName);
+
+            if (inputNoteIndex == -1)
+            {
+                Debug.LogError($"Invalid input note: {noteName}");
+                return inputNote;
+            }
+
+            // Find the nearest note in the scale
+            int nearestNoteIndex = -1;
+            int minDistance = int.MaxValue;
+
+            foreach (var note in currentScaleNotes)
+            {
+                string scaleNoteName = note.name.Substring(0, note.name.Length - 1);
+                int scaleNoteIndex = System.Array.IndexOf(noteNames, scaleNoteName);
+                
+                int distance = mapToHigherNote ? 
+                    (scaleNoteIndex - inputNoteIndex + 12) % 12 : 
+                    (inputNoteIndex - scaleNoteIndex + 12) % 12;
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearestNoteIndex = scaleNoteIndex;
+                }
+            }
+
+            if (nearestNoteIndex == -1)
+            {
+                Debug.LogWarning($"Could not find nearest note for {inputNote} in current scale");
+                return inputNote;
+            }
+
+            string mappedNote = $"{noteNames[nearestNoteIndex]}{octave}";
+            Debug.Log($"Mapped note {inputNote} to {mappedNote} in scale {currentScale.name}");
+            return mappedNote;
+        }
+
+        public void RegisterSampler(SamplerController sampler)
+        {
+            if (sampler != null && !connectedSamplers.Contains(sampler))
+            {
+                connectedSamplers.Add(sampler);
             }
         }
 
-        public void SetScaleType(ScaleType type)
+        public void UnregisterSampler(SamplerController sampler)
         {
-            scaleType = type;
-            SetScale(type.ToString());
+            if (sampler != null)
+            {
+                connectedSamplers.Remove(sampler);
+            }
+        }
+
+        public List<SamplerController> GetConnectedSamplers()
+        {
+            return new List<SamplerController>(connectedSamplers);
         }
 
         private void UpdateCurrentScale()
         {
+            Debug.Log($"Updating current scale. Root note: {rootNote}, Base octave: {baseOctave}");
             currentScaleNotes.Clear();
             int rootIndex = GetNoteIndex(rootNote);
+            
+            if (rootIndex == -1)
+            {
+                Debug.LogError($"Invalid root note: {rootNote}");
+                return;
+            }
+
+            Debug.Log($"Root index: {rootIndex}, Scale intervals: {string.Join(", ", currentScale.intervals)}");
             
             foreach (int interval in currentScale.intervals)
             {
@@ -121,11 +207,14 @@ namespace SamplerQuest.Audio.Sampler
                 string noteName = GetNoteName(noteIndex);
                 int octave = baseOctave + octaveOffset;
                 
+                string fullNoteName = $"{noteName}{octave}";
+                Debug.Log($"Adding note to scale: {fullNoteName} (index: {noteIndex}, octave: {octave})");
+                
                 currentScaleNotes.Add(new Note
                 {
-                    name = $"{noteName}{octave}",
+                    name = fullNoteName,
                     octave = octave,
-                    frequency = noteFrequencies[$"{noteName}{octave}"]
+                    frequency = noteFrequencies[fullNoteName]
                 });
             }
         }
@@ -133,12 +222,20 @@ namespace SamplerQuest.Audio.Sampler
         private int GetNoteIndex(string note)
         {
             string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-            return System.Array.IndexOf(noteNames, note);
+            string noteName = note.Substring(0, note.Length - 1); // Remove octave
+            int index = System.Array.IndexOf(noteNames, noteName);
+            if (index == -1)
+            {
+                Debug.LogError($"Invalid note name: {noteName}");
+            }
+            return index;
         }
 
         private string GetNoteName(int index)
         {
             string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            // Ensure index is within bounds by using modulo
+            index = ((index % 12) + 12) % 12; // This ensures positive index and wraps around
             return noteNames[index];
         }
 
@@ -168,6 +265,23 @@ namespace SamplerQuest.Audio.Sampler
             Major,
             Minor,
             Pentatonic
+        }
+
+        private void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                SetScale(scaleType);
+            }
+            else
+            {
+                // In editor, just update the current scale reference
+                currentScale = availableScales.Find(s => s.name == scaleType.ToString());
+                if (currentScale == null && availableScales.Count > 0)
+                {
+                    currentScale = availableScales[0];
+                }
+            }
         }
     }
 } 
