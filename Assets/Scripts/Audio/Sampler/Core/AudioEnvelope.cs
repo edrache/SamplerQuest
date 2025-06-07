@@ -6,13 +6,9 @@ namespace SamplerQuest.Audio.Sampler
     public class AudioEnvelope
     {
         [Header("ADSR Settings")]
-        [Range(0f, 2f)]
         public float attackTime = 0.1f;    // Time to reach peak volume
-        [Range(0f, 2f)]
         public float decayTime = 0.1f;     // Time to reach sustain level
-        [Range(0f, 1f)]
         public float sustainLevel = 0.7f;  // Volume level during sustain
-        [Range(0f, 2f)]
         public float releaseTime = 0.2f;   // Time to fade out after release
         
         private float currentTime;
