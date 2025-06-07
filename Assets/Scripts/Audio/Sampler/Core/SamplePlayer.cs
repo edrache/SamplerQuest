@@ -35,7 +35,7 @@ namespace SamplerQuest.Audio.Sampler
         {
             if (audioSource.clip == null)
             {
-                Debug.LogError("No audio clip assigned!");
+                //Debug.LogError("No audio clip assigned!");
                 return;
             }
             

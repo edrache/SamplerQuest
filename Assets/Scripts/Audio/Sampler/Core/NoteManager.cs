@@ -105,7 +105,7 @@ namespace SamplerQuest.Audio.Sampler
             currentScale = availableScales.Find(s => s.name == type.ToString());
             if (currentScale == null)
             {
-                Debug.LogWarning($"Scale {type} not found, defaulting to Major");
+                //Debug.LogWarning($"Scale {type} not found, defaulting to Major");
                 currentScale = availableScales[0]; // Default to Major if not found
             }
             UpdateCurrentScale();
@@ -130,7 +130,7 @@ namespace SamplerQuest.Audio.Sampler
 
             if (inputNoteIndex == -1)
             {
-                Debug.LogError($"Invalid input note: {noteName}");
+                //Debug.LogError($"Invalid input note: {noteName}");
                 return inputNote;
             }
 
@@ -156,12 +156,12 @@ namespace SamplerQuest.Audio.Sampler
 
             if (nearestNoteIndex == -1)
             {
-                Debug.LogWarning($"Could not find nearest note for {inputNote} in current scale");
+                //Debug.LogWarning($"Could not find nearest note for {inputNote} in current scale");
                 return inputNote;
             }
 
             string mappedNote = $"{noteNames[nearestNoteIndex]}{octave}";
-            Debug.Log($"Mapped note {inputNote} to {mappedNote} in scale {currentScale.name}");
+            //Debug.Log($"Mapped note {inputNote} to {mappedNote} in scale {currentScale.name}");
             return mappedNote;
         }
 
@@ -188,17 +188,17 @@ namespace SamplerQuest.Audio.Sampler
 
         private void UpdateCurrentScale()
         {
-            Debug.Log($"Updating current scale. Root note: {rootNote}, Base octave: {baseOctave}");
+            //Debug.Log($"Updating current scale. Root note: {rootNote}, Base octave: {baseOctave}");
             currentScaleNotes.Clear();
             int rootIndex = GetNoteIndex(rootNote);
             
             if (rootIndex == -1)
             {
-                Debug.LogError($"Invalid root note: {rootNote}");
+                //Debug.LogError($"Invalid root note: {rootNote}");
                 return;
             }
 
-            Debug.Log($"Root index: {rootIndex}, Scale intervals: {string.Join(", ", currentScale.intervals)}");
+            //Debug.Log($"Root index: {rootIndex}, Scale intervals: {string.Join(", ", currentScale.intervals)}");
             
             foreach (int interval in currentScale.intervals)
             {
@@ -208,7 +208,7 @@ namespace SamplerQuest.Audio.Sampler
                 int octave = baseOctave + octaveOffset;
                 
                 string fullNoteName = $"{noteName}{octave}";
-                Debug.Log($"Adding note to scale: {fullNoteName} (index: {noteIndex}, octave: {octave})");
+                //Debug.Log($"Adding note to scale: {fullNoteName} (index: {noteIndex}, octave: {octave})");
                 
                 currentScaleNotes.Add(new Note
                 {
@@ -226,17 +226,24 @@ namespace SamplerQuest.Audio.Sampler
             int index = System.Array.IndexOf(noteNames, noteName);
             if (index == -1)
             {
-                Debug.LogError($"Invalid note name: {noteName}");
+                //Debug.LogError($"Invalid note name: {noteName}");
             }
             return index;
         }
 
-        private string GetNoteName(int index)
+        public static string GetNoteName(int index)
         {
             string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
             // Ensure index is within bounds by using modulo
-            index = ((index % 12) + 12) % 12; // This ensures positive index and wraps around
-            return noteNames[index];
+            int noteIndex = ((index % 12) + 12) % 12; // This ensures positive index and wraps around
+            return noteNames[noteIndex];
+        }
+
+        public static string GetNoteWithOctave(int index)
+        {
+            string noteName = GetNoteName(index);
+            int octave = (index / 12) + 1; // +1 because we want to start from octave 1
+            return $"{noteName}{octave}";
         }
 
         public List<Note> GetCurrentScaleNotes() => currentScaleNotes;
@@ -252,9 +259,14 @@ namespace SamplerQuest.Audio.Sampler
             
             // Find note index
             int noteIndex = System.Array.IndexOf(noteNames, noteName);
+            if (noteIndex == -1)
+            {
+                //Debug.LogError($"Invalid note name: {noteName}");
+                return 1f; // Return default pitch
+            }
             
             // Calculate total semitones from A4 (440Hz)
-            int semitonesFromA4 = noteIndex - 9 + (octave - 4) * 12;
+            int semitonesFromA4 = noteIndex - 9 + (octave - 4) * 12; // A4 is index 9 in octave 4
             
             // Calculate pitch multiplier (2^(semitonesFromA4/12))
             return Mathf.Pow(2f, semitonesFromA4 / 12f);

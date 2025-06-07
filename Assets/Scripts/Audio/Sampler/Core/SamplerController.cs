@@ -22,6 +22,14 @@ namespace SamplerQuest.Audio.Sampler
         
         private void Awake()
         {
+            if (samplesContainer == null)
+            {
+                GameObject container = new GameObject("SamplesContainer");
+                container.transform.SetParent(transform);
+                samplesContainer = container.transform;
+                //Debug.Log("Created SamplesContainer automatically");
+            }
+            
             InitializeSamplePool();
         }
         
@@ -38,7 +46,7 @@ namespace SamplerQuest.Audio.Sampler
                 samplePool.Add(player);
             }
             
-            Debug.Log($"Initialized sample pool with {maxSamples} players");
+            //Debug.Log($"Initialized sample pool with {maxSamples} players");
         }
 
         private void HandlePlaybackFinished(SamplePlayer player)
@@ -62,7 +70,7 @@ namespace SamplerQuest.Audio.Sampler
                 
                 player.Reset();
                 samplePool.Add(player);
-                Debug.Log($"Returned {player.name} to the pool");
+                //Debug.Log($"Returned {player.name} to the pool");
             }
         }
         
@@ -70,13 +78,13 @@ namespace SamplerQuest.Audio.Sampler
         {
             if (activeSamples.ContainsKey(sampleData.sampleName))
             {
-                Debug.LogWarning($"Sample {sampleData.sampleName} is already loaded!");
+                //Debug.LogWarning($"Sample {sampleData.sampleName} is already loaded!");
                 return;
             }
             
             if (samplePool.Count == 0)
             {
-                Debug.LogWarning("No available sample slots!");
+                //Debug.LogWarning("No available sample slots!");
                 return;
             }
             
@@ -84,12 +92,12 @@ namespace SamplerQuest.Audio.Sampler
             samplePool.RemoveAt(0);
             player.Initialize(sampleData);
             activeSamples.Add(sampleData.sampleName, player);
-            Debug.Log($"Loaded sample: {sampleData.sampleName} with base note {sampleData.baseNote}");
+            //Debug.Log($"Loaded sample: {sampleData.sampleName} with base note {sampleData.baseNote}");
         }
         
         public bool PlayNote(string sampleName, string note, float velocity = 1f)
         {
-            Debug.Log($"Attempting to play note {note} on sample {sampleName}");
+            //Debug.Log($"Attempting to play note {note} on sample {sampleName}");
             
             if (activeSamples.TryGetValue(sampleName, out SamplePlayer player))
             {
@@ -100,18 +108,18 @@ namespace SamplerQuest.Audio.Sampler
                     availablePlayer.Initialize(player.GetSampleData());
                     availablePlayer.Play(note, velocity);
                     currentlyPlaying[note] = availablePlayer;
-                    Debug.Log($"Playing note {note} on sample {sampleName} using player {availablePlayer.name}");
+                    //Debug.Log($"Playing note {note} on sample {sampleName} using player {availablePlayer.name}");
                     return true;
                 }
                 else
                 {
-                    Debug.LogWarning("No available players in the pool!");
+                    //Debug.LogWarning("No available players in the pool!");
                     return false;
                 }
             }
             else
             {
-                Debug.LogWarning($"Sample {sampleName} not found! Available samples: {string.Join(", ", activeSamples.Keys)}");
+                //Debug.LogWarning($"Sample {sampleName} not found! Available samples: {string.Join(", ", activeSamples.Keys)}");
                 return false;
             }
         }
@@ -121,7 +129,7 @@ namespace SamplerQuest.Audio.Sampler
             if (currentlyPlaying.TryGetValue(note, out SamplePlayer player))
             {
                 player.Stop();
-                Debug.Log($"Stopping note {note}");
+                //Debug.Log($"Stopping note {note}");
             }
         }
         
@@ -153,7 +161,7 @@ namespace SamplerQuest.Audio.Sampler
                 player.Reset();
                 samplePool.Add(player);
                 activeSamples.Remove(sampleName);
-                Debug.Log($"Unloaded sample: {sampleName}");
+                //Debug.Log($"Unloaded sample: {sampleName}");
             }
         }
         
