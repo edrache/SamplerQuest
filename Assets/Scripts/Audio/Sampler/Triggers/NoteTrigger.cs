@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace SamplerQuest.Audio.Sampler
 {
@@ -21,6 +22,9 @@ namespace SamplerQuest.Audio.Sampler
         [SerializeField] private int maxNoteIndex = 24;
         [SerializeField] private bool invertMapping = false;
 
+        // Track which notes are currently playing
+        private Dictionary<NoteObject, string> activeNotes = new Dictionary<NoteObject, string>();
+
         private void Start()
         {
             if (sampler == null)
@@ -38,6 +42,26 @@ namespace SamplerQuest.Audio.Sampler
             // Load the sample when the trigger is created
             sampler.LoadSample(sampleData);
             Debug.Log($"[{gameObject.name}] Loaded sample: {sampleData.sampleName}");
+        }
+
+        private void OnDestroy()
+        {
+            // Stop all notes when the trigger is destroyed
+            foreach (var note in activeNotes.Values)
+            {
+                sampler.StopNote(note);
+            }
+            activeNotes.Clear();
+        }
+
+        private void OnDisable()
+        {
+            // Stop all notes when the trigger is disabled
+            foreach (var note in activeNotes.Values)
+            {
+                sampler.StopNote(note);
+            }
+            activeNotes.Clear();
         }
 
         private int GetNoteIndexFromPosition(float zPosition)
@@ -73,12 +97,20 @@ namespace SamplerQuest.Audio.Sampler
             NoteObject noteObject = other.GetComponent<NoteObject>();
             if (noteObject != null)
             {
+                // Stop any existing note for this object
+                if (activeNotes.ContainsKey(noteObject))
+                {
+                    sampler.StopNote(activeNotes[noteObject]);
+                    activeNotes.Remove(noteObject);
+                }
+
                 int noteIndex = GetNoteIndexFromPosition(other.transform.position.z);
                 string note = NoteManager.GetNoteWithOctave(noteIndex);
                 float finalVelocity = noteObject.Velocity * velocity;
                 
                 Debug.Log($"[{gameObject.name}] Playing note: {note} with velocity: {finalVelocity}");
                 sampler.PlayNote(sampleData.sampleName, note, finalVelocity);
+                activeNotes[noteObject] = note;
             }
             else
             {
@@ -91,12 +123,12 @@ namespace SamplerQuest.Audio.Sampler
             Debug.Log($"[{gameObject.name}] Trigger Exit with: {other.gameObject.name}");
             
             NoteObject noteObject = other.GetComponent<NoteObject>();
-            if (noteObject != null)
+            if (noteObject != null && activeNotes.ContainsKey(noteObject))
             {
-                int noteIndex = GetNoteIndexFromPosition(other.transform.position.z);
-                string note = NoteManager.GetNoteWithOctave(noteIndex);
+                string note = activeNotes[noteObject];
                 Debug.Log($"[{gameObject.name}] Stopping note: {note}");
                 sampler.StopNote(note);
+                activeNotes.Remove(noteObject);
             }
         }
 

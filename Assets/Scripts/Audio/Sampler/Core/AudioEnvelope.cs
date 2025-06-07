@@ -19,6 +19,7 @@ namespace SamplerQuest.Audio.Sampler
         private float currentVolume;
         private bool isReleased;
         private EnvelopeStage currentStage;
+        private float currentVelocity = 1f;
         
         private enum EnvelopeStage
         {
@@ -35,6 +36,7 @@ namespace SamplerQuest.Audio.Sampler
             currentVolume = 0f;
             isReleased = false;
             currentStage = EnvelopeStage.Attack;
+            currentVelocity = Mathf.Clamp01(velocity);
         }
         
         public void Release()
@@ -64,7 +66,7 @@ namespace SamplerQuest.Audio.Sampler
                     }
                     else
                     {
-                        currentVolume = Mathf.Lerp(0f, 1f, currentTime / attackTime);
+                        currentVolume = Mathf.Lerp(0f, currentVelocity, currentTime / attackTime);
                     }
                     break;
                     
@@ -72,11 +74,11 @@ namespace SamplerQuest.Audio.Sampler
                     if (currentTime >= decayTime)
                     {
                         currentStage = EnvelopeStage.Sustain;
-                        currentVolume = sustainLevel;
+                        currentVolume = sustainLevel * currentVelocity;
                     }
                     else
                     {
-                        currentVolume = Mathf.Lerp(1f, sustainLevel, currentTime / decayTime);
+                        currentVolume = Mathf.Lerp(currentVelocity, sustainLevel * currentVelocity, currentTime / decayTime);
                     }
                     break;
                     
@@ -96,7 +98,7 @@ namespace SamplerQuest.Audio.Sampler
                     }
                     else
                     {
-                        currentVolume = Mathf.Lerp(sustainLevel, 0f, currentTime / releaseTime);
+                        currentVolume = Mathf.Lerp(sustainLevel * currentVelocity, 0f, currentTime / releaseTime);
                     }
                     break;
             }

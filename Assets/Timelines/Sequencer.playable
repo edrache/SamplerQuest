@@ -299,7 +299,7 @@ MonoBehaviour:
     m_DisplayName: NotePlayableAsset
   m_Markers:
     m_Objects: []
-  sampleData: {fileID: 11400000, guid: c67517272989d4d7084dac459e5395f8, type: 2}
+  sampleData: {fileID: 11400000, guid: 2e8471f5ad76f4cc6963eada731d88ef, type: 2}
 --- !u!114 &-4831245365742207670
 MonoBehaviour:
   m_ObjectHideFlags: 1

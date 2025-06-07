@@ -11,6 +11,7 @@ namespace SamplerQuest.Audio.Sampler
     {
         [SerializeField] private SampleData sampleData;
         private PlayableDirector director;
+        private bool isInitialized = false;
 
         public SampleData GetSampleData() => sampleData;
 
@@ -19,19 +20,35 @@ namespace SamplerQuest.Audio.Sampler
             Debug.Log("Creating NoteTrack mixer");
             director = go.GetComponent<PlayableDirector>();
             
-            // Try to load the sample if we have both sampler and sample data
-            if (director != null && sampleData != null)
+            if (director == null)
             {
-                var sampler = director.GetGenericBinding(this) as SamplerController;
-                if (sampler != null)
-                {
-                    Debug.Log($"Loading sample {sampleData.sampleName} into sampler");
-                    sampler.LoadSample(sampleData);
-                }
-                else
-                {
-                    Debug.LogError("SamplerController not found in track binding!");
-                }
+                Debug.LogError("PlayableDirector not found on GameObject!");
+                return ScriptPlayable<NoteMixerBehaviour>.Create(graph, inputCount);
+            }
+
+            if (sampleData == null)
+            {
+                Debug.LogError("SampleData not assigned to track!");
+                return ScriptPlayable<NoteMixerBehaviour>.Create(graph, inputCount);
+            }
+
+            var sampler = director.GetGenericBinding(this) as SamplerController;
+            if (sampler == null)
+            {
+                Debug.LogError("SamplerController not found in track binding!");
+                return ScriptPlayable<NoteMixerBehaviour>.Create(graph, inputCount);
+            }
+
+            // Try to load the sample
+            try
+            {
+                Debug.Log($"Loading sample {sampleData.sampleName} into sampler");
+                sampler.LoadSample(sampleData);
+                isInitialized = true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to load sample: {e.Message}");
             }
             
             return ScriptPlayable<NoteMixerBehaviour>.Create(graph, inputCount);
@@ -39,26 +56,47 @@ namespace SamplerQuest.Audio.Sampler
 
         public override void GatherProperties(PlayableDirector director, IPropertyCollector driver)
         {
+            if (director == null)
+            {
+                Debug.LogError("PlayableDirector is null in GatherProperties!");
+                return;
+            }
+
             base.GatherProperties(director, driver);
             this.director = director;
             
-            if (sampleData != null)
+            if (sampleData == null)
             {
-                var sampler = director.GetGenericBinding(this) as SamplerController;
-                if (sampler != null)
+                Debug.LogError("SampleData not assigned to track!");
+                return;
+            }
+
+            var sampler = director.GetGenericBinding(this) as SamplerController;
+            if (sampler == null)
+            {
+                Debug.LogError("SamplerController not found in track binding!");
+                return;
+            }
+
+            // Only try to load the sample if we haven't already initialized
+            if (!isInitialized)
+            {
+                try
                 {
                     Debug.Log($"Loading sample {sampleData.sampleName} into sampler");
                     sampler.LoadSample(sampleData);
+                    isInitialized = true;
                 }
-                else
+                catch (System.Exception e)
                 {
-                    Debug.LogError("SamplerController not found in track binding!");
+                    Debug.LogError($"Failed to load sample: {e.Message}");
                 }
             }
-            else
-            {
-                Debug.LogError("SampleData not assigned to track!");
-            }
+        }
+
+        private void OnDestroy()
+        {
+            isInitialized = false;
         }
     }
 } 
