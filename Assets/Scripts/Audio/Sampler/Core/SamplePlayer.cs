@@ -1,77 +1,107 @@
 using UnityEngine;
+using System;
 
 namespace SamplerQuest.Audio.Sampler
 {
     public class SamplePlayer : MonoBehaviour
     {
         private AudioSource audioSource;
+        private AudioEnvelope envelope;
+        private bool isPlaying;
+        private float currentVelocity = 1f;
+        private SamplerController samplerController;
         private SampleData sampleData;
-        private float currentVolume;
-        private float currentPitch;
+        
+        public event Action<SamplePlayer> OnPlaybackFinished;
         
         private void Awake()
         {
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            envelope = new AudioEnvelope();
+            samplerController = FindAnyObjectByType<SamplerController>();
         }
         
         public void Initialize(SampleData data)
         {
             sampleData = data;
             audioSource.clip = data.audioClip;
-            audioSource.loop = data.isLooping;
-            currentVolume = data.defaultVolume;
-            currentPitch = data.defaultPitch;
-            UpdateAudioSource();
+            audioSource.pitch = 1f;
+            audioSource.volume = 1f;
         }
         
-        public void Play(float velocity = 1f)
+        public void Play(string note, float velocity = 1f)
         {
-            if (sampleData == null) return;
+            if (audioSource.clip == null)
+            {
+                Debug.LogError("No audio clip assigned!");
+                return;
+            }
             
-            float velocityMultiplier = Mathf.Lerp(
-                sampleData.minVelocity,
-                sampleData.maxVelocity,
-                velocity
-            );
+            currentVelocity = Mathf.Clamp01(velocity);
+            float pitch = NoteManager.GetPitchForNote(note);
+            audioSource.pitch = pitch;
             
-            audioSource.volume = currentVolume * velocityMultiplier;
+            // Copy envelope settings from SamplerController
+            if (samplerController != null)
+            {
+                envelope.attackTime = samplerController.GetAttackTime();
+                envelope.decayTime = samplerController.GetDecayTime();
+                envelope.sustainLevel = samplerController.GetSustainLevel();
+                envelope.releaseTime = samplerController.GetReleaseTime();
+            }
+            
+            // Start playback
             audioSource.Play();
+            isPlaying = true;
+            envelope.Start(currentVelocity);
         }
         
         public void Stop()
         {
-            audioSource.Stop();
+            if (isPlaying)
+            {
+                envelope.Release();
+            }
+        }
+        
+        private void Update()
+        {
+            if (isPlaying)
+            {
+                float envelopeVolume = envelope.Update(Time.deltaTime);
+                audioSource.volume = envelopeVolume;
+                
+                if (envelope.IsFinished())
+                {
+                    audioSource.Stop();
+                    isPlaying = false;
+                    OnPlaybackFinished?.Invoke(this);
+                }
+            }
         }
         
         public void SetVolume(float volume)
         {
-            currentVolume = volume;
-            UpdateAudioSource();
+            audioSource.volume = volume;
         }
         
         public void SetPitch(float pitch)
         {
-            currentPitch = pitch;
-            UpdateAudioSource();
+            audioSource.pitch = pitch;
         }
         
         public void Reset()
         {
-            sampleData = null;
             audioSource.clip = null;
-            currentVolume = 1f;
-            currentPitch = 1f;
-            UpdateAudioSource();
+            audioSource.pitch = 1f;
+            audioSource.volume = 1f;
+            isPlaying = false;
+            sampleData = null;
         }
-        
-        private void UpdateAudioSource()
-        {
-            if (audioSource != null)
-            {
-                audioSource.volume = currentVolume;
-                audioSource.pitch = currentPitch;
-            }
-        }
+
+        public SampleData GetSampleData() => sampleData;
+        public bool IsPlaying() => isPlaying;
     }
 } 

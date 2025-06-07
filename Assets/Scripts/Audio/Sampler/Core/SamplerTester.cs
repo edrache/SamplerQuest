@@ -36,7 +36,7 @@ namespace SamplerQuest.Audio.Sampler
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i))
                 {
-                    sampler.PlaySample(testSamples[i].sampleName);
+                    sampler.PlayNote(testSamples[i].sampleName, testSamples[i].baseNote);
                 }
             }
             
