@@ -8,6 +8,9 @@ namespace SamplerQuest.Audio.Sampler
         [Header("Sample Settings")]
         [SerializeField] private SampleData sampleData;
         
+        [Header("Sampler Reference")]
+        [SerializeField] private SamplerController targetSampler;
+        
         [Header("Keyboard Settings")]
         [SerializeField] private string startNote = "C4";
         [SerializeField] private int octaveRange = 2;
@@ -15,22 +18,20 @@ namespace SamplerQuest.Audio.Sampler
         [Header("Scale Settings")]
         [SerializeField] private NoteManager noteManager;
         
-        private SamplerController samplerController;
         private Dictionary<KeyCode, string> keyToNoteMap = new Dictionary<KeyCode, string>();
         private HashSet<KeyCode> pressedKeys = new HashSet<KeyCode>();
         
         private void Awake()
         {
-            samplerController = FindAnyObjectByType<SamplerController>();
-            if (samplerController == null)
+            if (targetSampler == null)
             {
-                Debug.LogError("SamplerController not found in scene!");
+                Debug.LogError("No SamplerController assigned to SamplerKeyboardController!");
                 return;
             }
 
             if (noteManager != null)
             {
-                noteManager.RegisterSampler(samplerController);
+                noteManager.RegisterSampler(targetSampler);
             }
             
             InitializeKeyboard();
@@ -40,7 +41,7 @@ namespace SamplerQuest.Audio.Sampler
         {
             if (noteManager != null)
             {
-                noteManager.UnregisterSampler(samplerController);
+                noteManager.UnregisterSampler(targetSampler);
             }
         }
         
@@ -48,7 +49,7 @@ namespace SamplerQuest.Audio.Sampler
         {
             if (sampleData != null)
             {
-                samplerController.LoadSample(sampleData);
+                targetSampler.LoadSample(sampleData);
             }
         }
         
@@ -94,7 +95,7 @@ namespace SamplerQuest.Audio.Sampler
         
         private void Update()
         {
-            if (samplerController == null) return;
+            if (targetSampler == null) return;
             
             // Check for key presses
             foreach (var kvp in keyToNoteMap)
@@ -110,7 +111,7 @@ namespace SamplerQuest.Audio.Sampler
                         note = noteManager.MapNoteToScale(note);
                     }
                     
-                    samplerController.PlayNote(sampleData.sampleName, note);
+                    targetSampler.PlayNote(sampleData.sampleName, note);
                 }
                 else if (Input.GetKeyUp(kvp.Key) && pressedKeys.Contains(kvp.Key))
                 {
@@ -123,7 +124,7 @@ namespace SamplerQuest.Audio.Sampler
                         note = noteManager.MapNoteToScale(note);
                     }
                     
-                    samplerController.StopNote(note);
+                    targetSampler.StopNote(note);
                 }
             }
         }

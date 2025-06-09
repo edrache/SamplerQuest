@@ -20,7 +20,13 @@ namespace SamplerQuest.Audio.Sampler
             audioSource.playOnAwake = false;
             audioSource.loop = false;
             envelope = new AudioEnvelope();
-            samplerController = FindAnyObjectByType<SamplerController>();
+            
+            // Get SamplerController from parent
+            samplerController = GetComponentInParent<SamplerController>();
+            if (samplerController == null)
+            {
+                Debug.LogError("No SamplerController found in parent hierarchy!");
+            }
         }
         
         public void Initialize(SampleData data)
