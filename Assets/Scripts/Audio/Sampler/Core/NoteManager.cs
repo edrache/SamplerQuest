@@ -62,6 +62,8 @@ namespace SamplerQuest.Audio.Sampler
 
         private void InitializeScales()
         {
+            availableScales.Clear();
+
             // Major scale
             availableScales.Add(new Scale
             {
@@ -83,12 +85,8 @@ namespace SamplerQuest.Audio.Sampler
                 intervals = new int[] { 0, 2, 4, 7, 9 }
             });
 
-            // Set initial scale based on scaleType
-            currentScale = availableScales.Find(s => s.name == scaleType.ToString());
-            if (currentScale == null)
-            {
-                currentScale = availableScales[0]; // Default to Major if not found
-            }
+            // Set initial scale
+            SetScale(scaleType);
         }
 
         public void SetRootNote(string note, int octave)
@@ -102,12 +100,45 @@ namespace SamplerQuest.Audio.Sampler
         {
             Debug.Log($"Setting scale to: {type}");
             scaleType = type;
+            
+            // Find scale by name
             currentScale = availableScales.Find(s => s.name == type.ToString());
+            
+            // If scale not found, create it
             if (currentScale == null)
             {
-                //Debug.LogWarning($"Scale {type} not found, defaulting to Major");
-                currentScale = availableScales[0]; // Default to Major if not found
+                Debug.LogWarning($"Scale {type} not found, creating new scale");
+                switch (type)
+                {
+                    case ScaleType.Major:
+                        currentScale = new Scale
+                        {
+                            name = "Major",
+                            intervals = new int[] { 0, 2, 4, 5, 7, 9, 11 }
+                        };
+                        break;
+                    case ScaleType.Minor:
+                        currentScale = new Scale
+                        {
+                            name = "Minor",
+                            intervals = new int[] { 0, 2, 3, 5, 7, 8, 10 }
+                        };
+                        break;
+                    case ScaleType.Pentatonic:
+                        currentScale = new Scale
+                        {
+                            name = "Pentatonic",
+                            intervals = new int[] { 0, 2, 4, 7, 9 }
+                        };
+                        break;
+                }
+                
+                if (currentScale != null)
+                {
+                    availableScales.Add(currentScale);
+                }
             }
+            
             UpdateCurrentScale();
         }
 
