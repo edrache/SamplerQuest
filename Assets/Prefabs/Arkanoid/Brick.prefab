@@ -122,4 +122,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitNote: E4
-  length: 0.1
+  length: 0.5
+  useRandomNote: 1
+  noteRange:
+  - C4
+  - D4
+  - E4
+  - F4
+  - G4
+  - A4
+  - B4
+  - C5
+  useSequentialNotes: 1
+  sequentialIndex: 0

@@ -27,7 +27,7 @@ namespace SamplerQuest.Audio.Sampler
                 GameObject container = new GameObject("SamplesContainer");
                 container.transform.SetParent(transform);
                 samplesContainer = container.transform;
-                //Debug.Log("Created SamplesContainer automatically");
+                Debug.Log("Created SamplesContainer automatically");
             }
             
             InitializeSamplePool();
@@ -46,31 +46,36 @@ namespace SamplerQuest.Audio.Sampler
                 samplePool.Add(player);
             }
             
-            //Debug.Log($"Initialized sample pool with {maxSamples} players");
+            Debug.Log($"Initialized sample pool with {maxSamples} players");
         }
 
         private void HandlePlaybackFinished(SamplePlayer player)
         {
-            if (currentlyPlaying.ContainsValue(player))
+            Debug.Log($"Playback finished for {player.name}");
+            
+            // Remove from currently playing
+            string noteToRemove = null;
+            foreach (var kvp in currentlyPlaying)
             {
-                string noteToRemove = null;
-                foreach (var kvp in currentlyPlaying)
+                if (kvp.Value == player)
                 {
-                    if (kvp.Value == player)
-                    {
-                        noteToRemove = kvp.Key;
-                        break;
-                    }
+                    noteToRemove = kvp.Key;
+                    break;
                 }
-                
-                if (noteToRemove != null)
-                {
-                    currentlyPlaying.Remove(noteToRemove);
-                }
-                
-                player.Reset();
+            }
+            
+            if (noteToRemove != null)
+            {
+                currentlyPlaying.Remove(noteToRemove);
+                Debug.Log($"Removed note {noteToRemove} from currently playing");
+            }
+            
+            // Reset and return to pool
+            player.Reset();
+            if (!samplePool.Contains(player))
+            {
                 samplePool.Add(player);
-                //Debug.Log($"Returned {player.name} to the pool");
+                Debug.Log($"Returned {player.name} to the pool. Pool size: {samplePool.Count}");
             }
         }
         
@@ -78,13 +83,13 @@ namespace SamplerQuest.Audio.Sampler
         {
             if (activeSamples.ContainsKey(sampleData.sampleName))
             {
-                //Debug.LogWarning($"Sample {sampleData.sampleName} is already loaded!");
+                Debug.LogWarning($"Sample {sampleData.sampleName} is already loaded!");
                 return;
             }
             
             if (samplePool.Count == 0)
             {
-                //Debug.LogWarning("No available sample slots!");
+                Debug.LogWarning("No available sample slots!");
                 return;
             }
             
@@ -92,12 +97,12 @@ namespace SamplerQuest.Audio.Sampler
             samplePool.RemoveAt(0);
             player.Initialize(sampleData);
             activeSamples.Add(sampleData.sampleName, player);
-            //Debug.Log($"Loaded sample: {sampleData.sampleName} with base note {sampleData.baseNote}");
+            Debug.Log($"Loaded sample: {sampleData.sampleName} with base note {sampleData.baseNote}");
         }
         
         public bool PlayNote(string sampleName, string note, float velocity = 1f)
         {
-            //Debug.Log($"Attempting to play note {note} on sample {sampleName}");
+            Debug.Log($"Attempting to play note {note} on sample {sampleName}");
             
             if (activeSamples.TryGetValue(sampleName, out SamplePlayer player))
             {
@@ -108,18 +113,47 @@ namespace SamplerQuest.Audio.Sampler
                     availablePlayer.Initialize(player.GetSampleData());
                     availablePlayer.Play(note, velocity);
                     currentlyPlaying[note] = availablePlayer;
-                    //Debug.Log($"Playing note {note} on sample {sampleName} using player {availablePlayer.name}");
+                    Debug.Log($"Playing note {note} on sample {sampleName} using player {availablePlayer.name}. Pool size: {samplePool.Count}");
                     return true;
                 }
                 else
                 {
-                    //Debug.LogWarning("No available players in the pool!");
+                    Debug.LogWarning("No available players in the pool!");
                     return false;
                 }
             }
             else
             {
-                //Debug.LogWarning($"Sample {sampleName} not found! Available samples: {string.Join(", ", activeSamples.Keys)}");
+                Debug.LogWarning($"Sample {sampleName} not found! Available samples: {string.Join(", ", activeSamples.Keys)}");
+                return false;
+            }
+        }
+
+        public bool PlayNoteWithDuration(string sampleName, string note, float duration, float velocity = 1f)
+        {
+            Debug.Log($"Attempting to play note {note} on sample {sampleName} with duration {duration}");
+            
+            if (activeSamples.TryGetValue(sampleName, out SamplePlayer player))
+            {
+                // Find first available SamplePlayer
+                SamplePlayer availablePlayer = FindAvailablePlayer();
+                if (availablePlayer != null)
+                {
+                    availablePlayer.Initialize(player.GetSampleData());
+                    availablePlayer.PlayWithDuration(note, duration, velocity);
+                    currentlyPlaying[note] = availablePlayer;
+                    Debug.Log($"Playing note {note} on sample {sampleName} with duration {duration} using player {availablePlayer.name}. Pool size: {samplePool.Count}");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogWarning("No available players in the pool!");
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Sample {sampleName} not found! Available samples: {string.Join(", ", activeSamples.Keys)}");
                 return false;
             }
         }
@@ -129,7 +163,7 @@ namespace SamplerQuest.Audio.Sampler
             if (currentlyPlaying.TryGetValue(note, out SamplePlayer player))
             {
                 player.Stop();
-                //Debug.Log($"Stopping note {note}");
+                Debug.Log($"Stopping note {note}");
             }
         }
         
@@ -161,7 +195,7 @@ namespace SamplerQuest.Audio.Sampler
                 player.Reset();
                 samplePool.Add(player);
                 activeSamples.Remove(sampleName);
-                //Debug.Log($"Unloaded sample: {sampleName}");
+                Debug.Log($"Unloaded sample: {sampleName}");
             }
         }
         

@@ -10,12 +10,14 @@ namespace SamplerQuest.Audio.Sampler
         public float decayTime = 0.1f;     // Time to reach sustain level
         public float sustainLevel = 0.7f;  // Volume level during sustain
         public float releaseTime = 0.2f;   // Time to fade out after release
+        public float sustainDuration = 0f; // Duration of sustain phase (0 = infinite)
         
         private float currentTime;
         private float currentVolume;
         private bool isReleased;
         private EnvelopeStage currentStage;
         private float currentVelocity = 1f;
+        private float totalDuration = 0f;
         
         private enum EnvelopeStage
         {
@@ -33,6 +35,19 @@ namespace SamplerQuest.Audio.Sampler
             isReleased = false;
             currentStage = EnvelopeStage.Attack;
             currentVelocity = Mathf.Clamp01(velocity);
+            totalDuration = 0f;
+            Debug.Log($"AudioEnvelope: Started with velocity {currentVelocity}");
+        }
+        
+        public void StartWithDuration(float velocity, float duration)
+        {
+            currentTime = 0f;
+            currentVolume = 0f;
+            isReleased = false;
+            currentStage = EnvelopeStage.Attack;
+            currentVelocity = Mathf.Clamp01(velocity);
+            totalDuration = duration;
+            Debug.Log($"AudioEnvelope: Started with velocity {currentVelocity} and duration {duration}");
         }
         
         public void Release()
@@ -42,6 +57,7 @@ namespace SamplerQuest.Audio.Sampler
                 isReleased = true;
                 currentTime = 0f;
                 currentStage = EnvelopeStage.Release;
+                Debug.Log($"AudioEnvelope: Released, moving to Release stage");
             }
         }
         
@@ -59,6 +75,7 @@ namespace SamplerQuest.Audio.Sampler
                     {
                         currentStage = EnvelopeStage.Decay;
                         currentTime = 0f;
+                        Debug.Log($"AudioEnvelope: Attack finished, moving to Decay");
                     }
                     else
                     {
@@ -71,6 +88,8 @@ namespace SamplerQuest.Audio.Sampler
                     {
                         currentStage = EnvelopeStage.Sustain;
                         currentVolume = sustainLevel * currentVelocity;
+                        currentTime = 0f; // Reset time for sustain phase
+                        Debug.Log($"AudioEnvelope: Decay finished, moving to Sustain");
                     }
                     else
                     {
@@ -79,10 +98,18 @@ namespace SamplerQuest.Audio.Sampler
                     break;
                     
                 case EnvelopeStage.Sustain:
-                    if (isReleased)
+                    // Check if sustain duration has elapsed
+                    if (sustainDuration > 0f && currentTime >= sustainDuration)
                     {
                         currentStage = EnvelopeStage.Release;
                         currentTime = 0f;
+                        Debug.Log($"AudioEnvelope: Sustain duration elapsed, moving to Release");
+                    }
+                    else if (isReleased)
+                    {
+                        currentStage = EnvelopeStage.Release;
+                        currentTime = 0f;
+                        Debug.Log($"AudioEnvelope: Sustain interrupted, moving to Release");
                     }
                     break;
                     
@@ -91,6 +118,7 @@ namespace SamplerQuest.Audio.Sampler
                     {
                         currentStage = EnvelopeStage.Finished;
                         currentVolume = 0f;
+                        Debug.Log($"AudioEnvelope: Release finished, envelope complete");
                     }
                     else
                     {

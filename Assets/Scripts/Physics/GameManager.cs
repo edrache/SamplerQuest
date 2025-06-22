@@ -79,7 +79,7 @@ namespace SamplerQuest.Physics
             onScoreChanged?.Invoke(score);
             Debug.Log($"GameManager: Brick destroyed, score increased to {score}");
             
-            // Play brick hit sound
+            // Play brick hit sound with duration
             if (samplerController != null && defaultSample != null)
             {
                 string mappedNote = brick.GetHitNote();
@@ -87,7 +87,9 @@ namespace SamplerQuest.Physics
                 {
                     mappedNote = noteManager.MapNoteToScale(mappedNote);
                 }
-                samplerController.PlayNote(defaultSample.sampleName, mappedNote);
+                
+                float noteDuration = brick.GetNoteDuration();
+                samplerController.PlayNoteWithDuration(defaultSample.sampleName, mappedNote, noteDuration);
             }
             
             if (brickGrid.GetActiveBrickCount() <= 1) // Last brick was just destroyed
