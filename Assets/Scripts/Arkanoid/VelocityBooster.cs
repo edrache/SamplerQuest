@@ -22,8 +22,12 @@ public class VelocityBooster : MonoBehaviour
         if (collision.contactCount > 0)
         {
             Vector3 normal = collision.GetContact(0).normal;
-            Vector3 boost = normal * m_BoostStrength;
-            ballRb.velocity += boost;
+            // Project current velocity onto normal
+            float velocityAlongNormal = Vector3.Dot(ballRb.velocity, normal);
+            // Add boost only in the direction of the normal
+            float newVelocityAlongNormal = velocityAlongNormal + m_BoostStrength;
+            Vector3 velocityParallel = ballRb.velocity - normal * velocityAlongNormal;
+            ballRb.velocity = velocityParallel + normal * newVelocityAlongNormal;
         }
     }
     #endregion
