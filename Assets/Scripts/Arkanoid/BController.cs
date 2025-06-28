@@ -5,6 +5,7 @@ public class BController : MonoBehaviour
 {
     #region Serialized Fields
     [SerializeField] private float m_Speed = 10f;
+    [SerializeField] private float m_MaxSpeed = 15f; // Maximum allowed speed
     #endregion
 
     #region Private Fields
@@ -16,6 +17,15 @@ public class BController : MonoBehaviour
     {
         m_Rigidbody = GetComponent<Rigidbody>();
         LaunchBall();
+    }
+
+    private void FixedUpdate()
+    {
+        // Limit the ball's speed
+        if (m_Rigidbody.velocity.magnitude > m_MaxSpeed)
+        {
+            m_Rigidbody.velocity = m_Rigidbody.velocity.normalized * m_MaxSpeed;
+        }
     }
     #endregion
 
