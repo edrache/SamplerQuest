@@ -18,6 +18,7 @@ public class BallImpulseOnAction : MonoBehaviour
     [SerializeField] private string m_BallTag = "Ball";
     [SerializeField] private MMF_Player m_ImpulseFeedback;
     [SerializeField] private bool m_ReverseDirection = false; // Reverse the direction of the impulse
+    [SerializeField] private bool m_ImpulseOnCollision = false; // If true, impulse is applied automatically on collision
     #endregion
 
     #region Events
@@ -42,6 +43,8 @@ public class BallImpulseOnAction : MonoBehaviour
 
     private void Update()
     {
+        if (m_ImpulseOnCollision)
+            return; // Skip input logic if impulse is automatic
         if (!m_CanImpulse || m_ImpulseGiven || m_BallRigidbody == null)
             return;
 
@@ -55,28 +58,7 @@ public class BallImpulseOnAction : MonoBehaviour
 
         if (m_Player.GetButtonDown(m_ActionName))
         {
-            Vector3 direction;
-            if (m_UseBallVelocityDirection && m_BallRigidbody != null)
-            {
-                direction = m_BallRigidbody.velocity.normalized;
-            }
-            else
-            {
-                direction = m_CustomDirection.normalized;
-            }
-            if (m_ReverseDirection)
-            {
-                direction = -direction;
-            }
-            m_BallRigidbody.velocity = direction * m_ImpulseSpeed;
-            m_ImpulseGiven = true;
-            OnImpulseGiven?.Invoke();
-            if (m_ImpulseFeedback != null)
-            {
-                m_ImpulseFeedback.PlayFeedbacks();
-            }
-            m_CanImpulse = false;
-            m_BallRigidbody = null;
+            ApplyImpulse();
         }
     }
     #endregion
@@ -100,6 +82,10 @@ public class BallImpulseOnAction : MonoBehaviour
             m_LastCollisionNormal = collision.GetContact(0).normal;
         else
             m_LastCollisionNormal = (collision.transform.position - transform.position).normalized;
+        if (m_ImpulseOnCollision)
+        {
+            ApplyImpulse();
+        }
     }
 
     private void OnCollisionExit(Collision collision)
@@ -115,6 +101,32 @@ public class BallImpulseOnAction : MonoBehaviour
     public void ResetImpulse()
     {
         m_ImpulseGiven = false;
+        m_CanImpulse = false;
+        m_BallRigidbody = null;
+    }
+
+    private void ApplyImpulse()
+    {
+        Vector3 direction;
+        if (m_UseBallVelocityDirection && m_BallRigidbody != null)
+        {
+            direction = m_BallRigidbody.velocity.normalized;
+        }
+        else
+        {
+            direction = m_CustomDirection.normalized;
+        }
+        if (m_ReverseDirection)
+        {
+            direction = -direction;
+        }
+        m_BallRigidbody.velocity = direction * m_ImpulseSpeed;
+        m_ImpulseGiven = true;
+        OnImpulseGiven?.Invoke();
+        if (m_ImpulseFeedback != null)
+        {
+            m_ImpulseFeedback.PlayFeedbacks();
+        }
         m_CanImpulse = false;
         m_BallRigidbody = null;
     }
