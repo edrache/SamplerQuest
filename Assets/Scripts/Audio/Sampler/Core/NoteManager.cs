@@ -281,6 +281,15 @@ namespace SamplerQuest.Audio.Sampler
 
         private void OnValidate()
         {
+            if (availableScales == null || availableScales.Count == 0)
+                InitializeScales();
+
+            if (noteFrequencies == null || noteFrequencies.Count == 0)
+                InitializeNoteFrequencies();
+
+            if (availableScales == null || availableScales.Count == 0)
+                return;
+
             if (Application.isPlaying)
             {
                 SetScale(scaleType);
@@ -293,6 +302,7 @@ namespace SamplerQuest.Audio.Sampler
                 {
                     currentScale = availableScales[0];
                 }
+                UpdateCurrentScale();
             }
         }
     }

@@ -19,7 +19,7 @@ public class Brick : MonoBehaviour
     #endregion
 
     #region Unity Lifecycle
-    private void Awake()
+    protected void Awake()
     {
         m_MeshRenderer = GetComponent<MeshRenderer>();
         if (m_MeshRenderer != null)
@@ -35,7 +35,7 @@ public class Brick : MonoBehaviour
     #endregion
 
     #region Collision Handling
-    private void OnCollisionEnter(Collision collision)
+    protected void OnCollisionEnter(Collision collision)
     {
         // Only react to BController
         if (collision.gameObject.GetComponent<BController>() == null)
